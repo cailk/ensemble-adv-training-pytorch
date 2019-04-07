@@ -32,3 +32,6 @@ Ensemble Adversarial Training:
 ```
 python -m train_adv models/modelA_ens models/modelA models/modelC models/modelD --type=0 --epochs=12
 ```
+
+###### REFERENCE
+1. Author's code: [ftramer/ensemble-adv-training](https://github.com/ftramer/ensemble-adv-training)
