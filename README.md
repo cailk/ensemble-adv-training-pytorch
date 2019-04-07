@@ -1,2 +1,3 @@
 # ensemble-adv-training-pytorch
-Ensemble Adversarial Training on MNIST with pytorch
+
+This repository contains pytorch code to reproduce results from the paper:
