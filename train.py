@@ -37,7 +37,12 @@ def main(args):
         for batch_idx, (data, labels) in enumerate(train_loader):
             data, labels = data.to(device), labels.to(device)
             train(epoch, batch_idx, model, data, labels, optimizer)
-    test_error = test_error_rate(model, test_loader, cuda=args.cuda)
+    correct = 0
+    with torch.no_grad():
+        for (data, labels) in test_loader:
+            data, labels = data.to(device), labels.to(device)
+            correct += test_error_rate(model, data, labels)
+    test_error = 100. - 100. * correct / len(test_loader.dataset)
     print('Test Set Error Rate: {:.2f}%'.format(test_error))
 
     torch.save(model.state_dict(), args.model+'.pkl')

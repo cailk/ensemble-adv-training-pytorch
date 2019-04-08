@@ -17,18 +17,16 @@ import argparse
 import os
 
 def main(args):
-    def get_model_type(adv_model_name):
-        if adv_model_name == 'models/modelA':
-            type = 0
-        elif adv_model_name == 'models/modelB':
-            type = 1
-        elif adv_model_name == 'models/modelC':
-            type = 2
-        elif adv_model_name == 'models/modelD':
-            type = 3
-        else:
-            raise ValueError('Unknown model: {}'.format(adv_model_name))
-        return type
+    def get_model_type(model_name):
+        model_type = {
+            'models/modelA': 0, 'models/modelA_adv': 0, 'models/modelA_ens': 0,
+            'models/modelB': 1, 'models/modelB_adv': 1, 'models/modelB_ens': 1,
+            'models/modelC': 2, 'models/modelC_adv': 2, 'models/modelC_ens': 2,
+            'models/modelD': 3, 'models/modelD_adv': 3, 'models/modelD_ens': 3,
+        }
+        if model_name not in model_type.keys():
+            raise ValueError('Unknown model: {}'.format(model_name))
+        return model_type[model_name]
 
     torch.manual_seed(args.seed)
     device = torch.device('cuda' if args.cuda else 'cpu')
@@ -62,7 +60,12 @@ def main(args):
                 grad = gen_grad(data, m, labels, loss='training')
                 x_advs[i] = symbolic_fgs(data, grad, eps=eps)
             train(epoch, batch_idx, model, data, labels, optimizer, x_advs=x_advs)
-    test_error = test_error_rate(model, test_loader, cuda=args.cuda)
+    correct = 0
+    with torch.no_grad():
+        for (data, labels) in test_loader:
+            data, labels = data.to(device), labels.to(device)
+            correct += test_error_rate(model, data, labels)
+    test_error = 100. - 100. * correct / len(test_loader.dataset)
     print('Test Set Error Rate: {:.2f}%'.format(test_error))
 
     torch.save(model.state_dict(), args.model + '.pkl')

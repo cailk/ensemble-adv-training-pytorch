@@ -33,5 +33,17 @@ Ensemble Adversarial Training:
 python -m train_adv models/modelA_ens models/modelA models/modelC models/modelD --type=0 --epochs=12
 ```
 
+The accuracy of the models on the MNIST test set can be computed using
+
+```
+python -m simple_eval test [model(s)]
+```
+
+To evaluate robustness to various attacks
+
+```
+python -m simple_eval [attack] [source_model] [target_model(s)] [--parameters (opt)]
+```
+
 ###### REFERENCE
 1. Author's code: [ftramer/ensemble-adv-training](https://github.com/ftramer/ensemble-adv-training)

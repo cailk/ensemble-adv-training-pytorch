@@ -31,18 +31,13 @@ def train(epoch, batch_idx, model, data, labels, optimizer, x_advs=None):
             batch_idx, epoch+1, loss.item(), loss1.item(), loss2.item(), error_rate(preds, labels)
         ))
 
-def test_error_rate(model, test_loader, cuda=True):
-    device = torch.device('cuda' if cuda else 'cpu')
+def test_error_rate(model, data, labels):
     model.eval()
     correct = 0
-    with torch.no_grad():
-        for data, labels in test_loader:
-            data, labels = data.to(device), labels.to(device)
-            logits = model(data)
-            preds = logits.max(1)[1]
-            correct += preds.eq(labels).sum().item()
-    error_rate = 100. - 100. * correct / len(test_loader.dataset)
-    return error_rate
+    logits = model(data)
+    preds = logits.max(1)[1]
+    correct += preds.eq(labels).sum().item()
+    return correct
 
 def error_rate(preds, labels):
     '''

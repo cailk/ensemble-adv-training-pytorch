@@ -97,6 +97,9 @@ class modelD(nn.Module):
         return x
 
 def model_mnist(type=1):
+    '''
+    Defines MNIST model
+    '''
     models = [modelA, modelB, modelC, modelD]
     return models[type]()
 
