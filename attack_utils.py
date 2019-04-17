@@ -12,6 +12,8 @@ def gen_adv_loss(logits, labels, loss='logloss', mean=False):
     Generate the loss function
     '''
     if loss == 'training':
+        # use the model's output instead of the true labels to avoid
+        # label leaking at training time
         labels = logits.max(1)[1]
         if mean:
             out = F.cross_entropy(logits, labels, reduction='mean')
@@ -27,11 +29,15 @@ def gen_adv_loss(logits, labels, loss='logloss', mean=False):
     return out
 
 def gen_grad(x, model, y, loss='logloss'):
+    '''
+    Generate the gradient of the loss function.
+    '''
     model.eval()
     x.requires_grad = True
+
+    # Define gradient of loss wrt input
     logits = model(x)
     adv_loss = gen_adv_loss(logits, y, loss)
-
     model.zero_grad()
     adv_loss.backward()
     grad = x.grad.data

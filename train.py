@@ -10,7 +10,7 @@ import torch.optim as optim
 import torch.utils.data
 from torchvision import datasets, transforms
 from mnist import *
-from utils import train, test_error_rate
+from utils import train, test
 import argparse
 import os
 
@@ -33,15 +33,18 @@ def main(args):
     model = model_mnist(type=args.type).to(device)
     optimizer = optim.Adam(model.parameters())
 
+    # Train an MNIST model
     for epoch in range(args.epochs):
         for batch_idx, (data, labels) in enumerate(train_loader):
             data, labels = data.to(device), labels.to(device)
             train(epoch, batch_idx, model, data, labels, optimizer)
+
+    # Finally print the result!
     correct = 0
     with torch.no_grad():
         for (data, labels) in test_loader:
             data, labels = data.to(device), labels.to(device)
-            correct += test_error_rate(model, data, labels)
+            correct += test(model, data, labels)
     test_error = 100. - 100. * correct / len(test_loader.dataset)
     print('Test Set Error Rate: {:.2f}%'.format(test_error))
 

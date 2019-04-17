@@ -9,7 +9,7 @@ import torch.optim as optim
 import torch.utils.data
 from torchvision import datasets, transforms
 from mnist import *
-from utils import train, test_error_rate
+from utils import train, test
 from attack_utils import gen_grad
 from fgs import symbolic_fgs, iter_fgs
 from os.path import basename
@@ -40,10 +40,12 @@ def main(args):
         datasets.MNIST('../attack_mnist', train=False, transform=transforms.ToTensor()),
         batch_size=args.batch_size, shuffle=True, **kwargs)
 
+    # source model for crafting adversarial examples
     src_model_name = args.src_model
     type = get_model_type(src_model_name)
     src_model = load_model(src_model_name, type).to(device)
 
+    # model(s) to target
     target_model_names = args.target_models
     target_models = [None] * len(target_model_names)
     for i in range(len(target_model_names)):
@@ -51,12 +53,14 @@ def main(args):
         target_models[i] = load_model(target_model_names[i], type=type).to(device)
 
     attack = args.attack
+
+    # simply compute test error
     if attack == 'test':
         correct_s = 0
         with torch.no_grad():
             for (data, labels) in test_loader:
                 data, labels = data.to(device), labels.to(device)
-                correct_s += test_error_rate(src_model, data, labels)
+                correct_s += test(src_model, data, labels)
         err = 100. - 100. * correct_s / len(test_loader.dataset)
         print('Test error of {}: {:.2f}'.format(basename(src_model_name), err))
 
@@ -65,7 +69,7 @@ def main(args):
             with torch.no_grad():
                 for (data, labels) in test_loader:
                     data, labels = data.to(device), labels.to(device)
-                    correct_t += test_error_rate(target_model, data, labels)
+                    correct_t += test(target_model, data, labels)
             err = 100. - 100. * correct_t / len(test_loader.dataset)
             print('Test error of {}: {:.2f}'.format(basename(target_model_names), err))
         return
@@ -74,19 +78,22 @@ def main(args):
 
     correct = 0
     for (data, labels) in test_loader:
+        # take the random step in the RAND+FGSM
         if attack == 'rand_fgs':
             data = torch.clamp(data + torch.zeros_like(data).uniform_(-args.alpha, args.alpha), 0.0, 1.0)
             eps -= args.alpha
         data, labels = data.to(device), labels.to(device)
         grad = gen_grad(data, src_model, labels)
 
+        # FGSM and RAND+FGSM one-shot attack
         if attack in ['fgs', 'rand_fgs']:
             adv_x = symbolic_fgs(data, grad, eps=eps)
 
+        # iterative FGSM
         if attack == 'ifgs':
             adv_x = iter_fgs(src_model, data, labels, steps=args.steps, eps=args.eps/args.steps)
 
-        correct += test_error_rate(src_model, adv_x, labels)
+        correct += test(src_model, adv_x, labels)
     test_error = 100. - 100. * correct / len(test_loader.dataset)
     print('Test Set Error Rate: {:.2f}%'.format(test_error))
 

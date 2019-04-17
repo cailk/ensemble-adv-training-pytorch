@@ -10,7 +10,7 @@ import torch.optim as optim
 import torch.utils.data
 from torchvision import datasets, transforms
 from mnist import *
-from utils import train, test_error_rate
+from utils import train, test
 from attack_utils import gen_grad
 from fgs import symbolic_fgs
 import argparse
@@ -43,6 +43,9 @@ def main(args):
         batch_size=args.batch_size, shuffle=True, **kwargs)
 
     eps = args.eps
+
+    # if src_models is not None, we train on adversarial examples that come
+    # from multiple models
     adv_model_names = args.adv_models
     adv_models = [None] * len(adv_model_names)
     for i in range(len(adv_model_names)):
@@ -52,6 +55,7 @@ def main(args):
     model = model_mnist(type=args.type).to(device)
     optimizer = optim.Adam(model.parameters())
 
+    # Train on MNIST model
     x_advs = [None] * (len(adv_models) + 1)
     for epoch in range(args.epochs):
         for batch_idx, (data, labels) in enumerate(train_loader):
@@ -60,11 +64,13 @@ def main(args):
                 grad = gen_grad(data, m, labels, loss='training')
                 x_advs[i] = symbolic_fgs(data, grad, eps=eps)
             train(epoch, batch_idx, model, data, labels, optimizer, x_advs=x_advs)
+
+    # Finally print the result
     correct = 0
     with torch.no_grad():
         for (data, labels) in test_loader:
             data, labels = data.to(device), labels.to(device)
-            correct += test_error_rate(model, data, labels)
+            correct += test(model, data, labels)
     test_error = 100. - 100. * correct / len(test_loader.dataset)
     print('Test Set Error Rate: {:.2f}%'.format(test_error))
 
